@@ -1,0 +1,14 @@
+module alu (
+    input [3:0] A, B,    // 4-bit inputs
+    input [2:0] op,      // 3-bit operation code
+    output reg [3:0] Y   // 4-bit output
+);
+    always @(*) begin
+        if (op == 3'b000) Y = A + B;  // Add A + B
+        else if (op == 3'b001) Y = A - B;  // Subtract A - B
+        else if (op == 3'b010) Y = A & B;  // AND A and B
+        else if (op == 3'b011) Y = A | B;  // OR A or B
+        else if (op == 3'b100) Y = ~A;     // NOT A
+        else Y = 4'b0000;                  // Output 0 for other codes
+    end
+endmodule
