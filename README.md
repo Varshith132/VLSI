@@ -184,3 +184,89 @@ This 4-bit ALU is a simple, efficient Verilog module suitable for basic arithmet
  ##OUTPUT
  ![Screenshot 2025-05-30 131208](https://github.com/user-attachments/assets/c2671efc-5e5d-42e4-86b9-ec9316d5ee9f)
 
+
+ ##TASK II:-
+ 🧩 Module Name: RAM DESIGN 
+✅ Description:
+This module implements a synchronous 8-bit wide, 256-location RAM with the following features:
+
+Synchronous reset: Initializes all memory contents to 0.
+
+Synchronous write: Writes data to memory on the rising edge of the clock when wr is high.
+
+Synchronous read: Reads data from memory on the rising edge of the clock when wr is low.
+
+🧮 Ports:
+Name	Direction	Width	Description
+clk	input	1	System clock
+rst	input	1	Synchronous reset (active high)
+wr	input	1	Write enable
+din	input	8	Data input to be written
+addr	input	8	Memory address (0–255)
+dout	output	8	Data output from the memory
+
+📦 Internal Components:
+🔸 reg [7:0] mem [0:255];
+256 bytes of memory (each 8 bits wide).
+
+Memory is addressed using the addr input.
+
+🔁 Behavior (in always @(posedge clk) block):
+🔹 Reset (rst == 1):
+On rising edge of clk, if rst is high:
+
+All memory locations are set to 0 (cleared).
+
+🔹 Write (wr == 1):
+On rising edge of clk, if wr is high:
+
+The value on din is stored in the memory at the address specified by addr.
+
+🔹 Read (wr == 0):
+On rising edge of clk, if wr is low:
+
+The value stored at addr is loaded into dout.
+
+🧪 Testbench – Module Name: tb_ram
+✅ Purpose:
+Verifies the functionality of the ram module by:
+
+Resetting the memory.
+
+Writing known values to specific addresses.
+
+Reading back those values to check correctness.
+
+🧾 Testbench Components
+Signal	Type	Description
+clk	reg	Clock (toggles every 5 units)
+rst	reg	Resets memory (asserted at start)
+wr	reg	Controls read/write
+din	reg	Input data to be written
+addr	reg	Address to read/write
+dout	wire	Output data from RAM
+
+🔄 Simulation Sequence
+Time	Action	Notes
+0	Reset asserted	Memory cleared to 0
+10	Reset deasserted	Ready to write/read
+20	Write 0xAA to address 10	
+30	Write 0xBB to address 20	
+40	Read from address 10	Expect 0xAA on dout
+50	Read from address 20	Expect 0xBB on dout
+70	Simulation ends	
+
+📈 Expected Output (Console or Waveform)
+verilog
+Copy
+Edit
+dout = 0xAA (after reading address 10)
+dout = 0xBB (after reading address 20)
+📌 Notes
+All memory operations (read/write/reset) happen synchronously with the clock's rising edge.
+
+This design is suitable for small FPGA RAM simulations, digital design labs, and learning purposes.
+
+Can be expanded to 16-bit/32-bit RAM by changing reg [15:0] or reg [31:0] and adjusting din, dout.
+    ##OUTPUT:--![Screenshot 2025-05-30 134514](https://github.com/user-attachments/assets/0c0ffe47-d0d0-4c34-afcc-8f39871c42f9)
+
