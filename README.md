@@ -183,11 +183,12 @@ When synthesizing the ALU for FPGA or ASIC:
 This 4-bit ALU is a simple, efficient Verilog module suitable for basic arithmetic and logical operations. Its combinational design ensures fast response to input changes, and its minimal operation set makes it resource-efficient. While limited in scope, it serves as a foundation for more complex ALUs and can be extended with additional features as needed. Comprehensive testing is recommended to verify functionality across all input combinations and operation codes.
  ##OUTPUT
  ![Screenshot 2025-05-30 131208](https://github.com/user-attachments/assets/c2671efc-5e5d-42e4-86b9-ec9316d5ee9f)
+ 
 
 
  ##TASK II:-
  🧩 Module Name: RAM DESIGN 
-✅ Description:
+## Description:
 This module implements a synchronous 8-bit wide, 256-location RAM with the following features:
 
 Synchronous reset: Initializes all memory contents to 0.
@@ -196,7 +197,7 @@ Synchronous write: Writes data to memory on the rising edge of the clock when wr
 
 Synchronous read: Reads data from memory on the rising edge of the clock when wr is low.
 
-🧮 Ports:
+## Ports:
 Name	Direction	Width	Description
 clk	input	1	System clock
 rst	input	1	Synchronous reset (active high)
@@ -205,13 +206,13 @@ din	input	8	Data input to be written
 addr	input	8	Memory address (0–255)
 dout	output	8	Data output from the memory
 
-📦 Internal Components:
+ Internal Components:
 🔸 reg [7:0] mem [0:255];
 256 bytes of memory (each 8 bits wide).
 
 Memory is addressed using the addr input.
 
-🔁 Behavior (in always @(posedge clk) block):
+## Behavior (in always @(posedge clk) block):
 🔹 Reset (rst == 1):
 On rising edge of clk, if rst is high:
 
@@ -227,8 +228,8 @@ On rising edge of clk, if wr is low:
 
 The value stored at addr is loaded into dout.
 
-🧪 Testbench – Module Name: tb_ram
-✅ Purpose:
+ ##Testbench – Module Name: tb_ram
+##Purpose:
 Verifies the functionality of the ram module by:
 
 Resetting the memory.
@@ -237,7 +238,7 @@ Writing known values to specific addresses.
 
 Reading back those values to check correctness.
 
-🧾 Testbench Components
+##Testbench Components:
 Signal	Type	Description
 clk	reg	Clock (toggles every 5 units)
 rst	reg	Resets memory (asserted at start)
@@ -246,7 +247,7 @@ din	reg	Input data to be written
 addr	reg	Address to read/write
 dout	wire	Output data from RAM
 
-🔄 Simulation Sequence
+##Simulation Sequence:
 Time	Action	Notes
 0	Reset asserted	Memory cleared to 0
 10	Reset deasserted	Ready to write/read
@@ -256,17 +257,157 @@ Time	Action	Notes
 50	Read from address 20	Expect 0xBB on dout
 70	Simulation ends	
 
-📈 Expected Output (Console or Waveform)
+Expected Output (Console or Waveform)
 verilog
 Copy
 Edit
 dout = 0xAA (after reading address 10)
 dout = 0xBB (after reading address 20)
-📌 Notes
+##Notes
 All memory operations (read/write/reset) happen synchronously with the clock's rising edge.
 
 This design is suitable for small FPGA RAM simulations, digital design labs, and learning purposes.
 
 Can be expanded to 16-bit/32-bit RAM by changing reg [15:0] or reg [31:0] and adjusting din, dout.
     ##OUTPUT:--![Screenshot 2025-05-30 134514](https://github.com/user-attachments/assets/0c0ffe47-d0d0-4c34-afcc-8f39871c42f9)
+
+
+
+
+
+##TASK IV:--
+Here’s a simple, easy-to-understand documentation for the **FIR filter Verilog code** and testbench you’ve seen earlier. This is written with clarity in mind for students or beginners in digital design.
+
+---
+
+#  FIR Filter in Verilog – Documentation
+
+---
+
+##  What is a FIR Filter?
+
+A **Finite Impulse Response (FIR)** filter is a type of digital filter where the output depends only on current and past input values. It does **not** use previous output values.
+
+---
+
+## Design Specifications
+
+* **Filter Type**: Low-pass
+* **Number of Taps**: 5 (this means we use 5 recent input values)
+* **Coefficients** (weights applied to input values):
+
+```
+h[0] = 1
+h[1] = 2
+h[2] = 3
+h[3] = 2
+h[4] = 1
+```
+
+These weights are symmetric and give a smoothing effect.
+
+---
+
+## Verilog Module: `fir_filter`
+
+### Inputs:
+
+| Name | Width  | Description                         |
+| ---- | ------ | ----------------------------------- |
+| clk  | 1 bit  | System clock                        |
+| rst  | 1 bit  | Synchronous reset (clears memory)   |
+| x    | 8 bits | Input sample (new data every clock) |
+
+### Output:
+
+| Name | Width   | Description                    |
+| ---- | ------- | ------------------------------ |
+| y    | 16 bits | Output result (filtered value) |
+
+---
+
+### How It Works (Step-by-Step):
+
+1. **Shift Register**: Stores last 5 inputs (like a conveyor belt).
+2. **Multiply** each input by its corresponding coefficient.
+3. **Sum** all the products to get the output.
+4. This process repeats every clock cycle.
+
+---
+
+### Code Behavior:
+
+```verilog
+shift_reg[0] <= x;
+shift_reg[1] <= shift_reg[0];
+...
+```
+
+* New input goes into the first position.
+* Previous inputs move forward in the register.
+
+```verilog
+y <= h[0]*shift_reg[0] + h[1]*shift_reg[1] + ... + h[4]*shift_reg[4];
+```
+
+* Output is calculated as a sum of products.
+
+---
+
+## Testbench: `tb_fir_filter`
+
+### Purpose:
+
+To simulate and observe how the filter reacts to a series of input values.
+
+### Steps:
+
+* A clock toggles every 5 time units.
+* A series of input samples (from 10 to 255) are sent in.
+* The module filters the input, and we can observe the output.
+
+---
+
+### Sample Simulation Timing:
+
+| Clock Cycle | Input (x) | Output (y)              |
+| ----------- | --------- | ----------------------- |
+| 1           | 10        | 10 (start of filtering) |
+| 2           | 20        | 10 + 2×20               |
+| 3           | 30        | 10 + 2×20 + 3×30        |
+| ...         | ...       | Filter stabilizes       |
+
+---
+
+## Performance Summary
+
+| Aspect       | Value / Comment                     |
+| ------------ | ----------------------------------- |
+| Filter Type  | Low-pass FIR                        |
+| Taps         | 5 inputs used                       |
+| Latency      | 4 cycles (delay until valid output) |
+| Resource Use | 5 multipliers, 4 adders             |
+| Output Width | 16 bits to handle large sums        |
+
+---
+
+## Real-World Use
+
+FIR filters are used in:
+
+* Audio processing (bass/treble filtering)
+* Signal noise reduction
+* Communication systems (channel equalization)
+
+---
+
+## Summary
+
+* This FIR filter is **easy to understand**, **lightweight**, and suitable for FPGAs or beginner projects.
+* You can **change the coefficients** to make different kinds of filters: low-pass, high-pass, band-pass, etc.
+* It’s easy to extend this design by increasing the number of taps.
+
+  
+  ##OUTPUT:-- [Screenshot 2025-05-30 142539](https://github.com/user-attachments/assets/68e0fb7a-10ce-47fb-bcac-2f9b724a28f2)
+              [Screenshot 2025-05-30 143716](https://github.com/user-attachments/assets/2cbba40e-414f-4483-a53a-83240fd8b673)
 
