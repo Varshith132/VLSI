@@ -3,8 +3,8 @@
 *INTERN ID* :CT4MPGN 
 *DOMAIN*: VLSI
 *DURATION*: 4 MONTHS
-#TASK I*:-
 
+#TASK I*:-
 # Arithmetic Logic Unit (ALU) Module Documentation
 
 ## 1. Introduction
@@ -410,4 +410,172 @@ FIR filters are used in:
   
   ##OUTPUT:-- [Screenshot 2025-05-30 142539](https://github.com/user-attachments/assets/68e0fb7a-10ce-47fb-bcac-2f9b724a28f2)
               [Screenshot 2025-05-30 143716](https://github.com/user-attachments/assets/2cbba40e-414f-4483-a53a-83240fd8b673)
+
+
+
+
+  ##TASK III:- 4-STAGE PROCESSOR DESIGN
+  Here's a clear and beginner-friendly **documentation** of your Verilog module `pipelined_processor`, which implements a simple 4-stage pipelined processor supporting `ADD`, `SUB`, and `LOAD` instructions.
+
+---
+
+# Verilog Documentation – 4-Stage Pipelined Processor
+
+---
+
+##  Overview
+
+This module is a simplified **4-stage pipelined processor**, which mimics the instruction flow found in modern CPUs. It supports basic operations:
+
+* `ADD`: Add two registers
+* `SUB`: Subtract two registers
+* `LOAD`: Load data from memory
+
+---
+
+##  Inputs
+
+| Signal | Width | Description         |
+| ------ | ----- | ------------------- |
+| `clk`  | 1-bit | Clock signal        |
+| `rst`  | 1-bit | Reset signal (sync) |
+
+---
+
+##  Processor Stages
+
+This processor breaks the instruction flow into 4 classic pipeline stages:
+
+### 1. **Instruction Fetch (IF)**
+
+* Fetches the instruction from `instruction_memory` using the `pc` (Program Counter).
+* Computes `pc + 4` to get the next instruction address.
+
+```verilog
+if_id_instruction <= instruction_memory[pc[9:2]];
+if_id_pc_plus_4 <= pc + 4;
+```
+
+---
+
+### 2. **Instruction Decode (ID)**
+
+* Extracts instruction fields:
+
+  * `opcode` – operation code (e.g. ADD, SUB)
+  * `rs_addr`, `rt_addr`, `rd_addr` – register addresses
+* Reads values from the `register_file`.
+* Sets control signals (`alu_op`, `reg_write`, `mem_read`) based on the instruction type.
+
+```verilog
+id_ex_rs_data <= register_file[rs_addr];
+id_ex_rt_data <= register_file[rt_addr];
+```
+
+---
+
+### 3. **Execute (EX)**
+
+* Performs the operation defined by `alu_op`:
+
+  * `00`: ADD
+  * `01`: SUB
+  * `10`: LOAD (address only; no operation)
+* Passes the result to the WB stage.
+
+```verilog
+alu_result <= id_ex_rs_data + id_ex_rt_data; // Example for ADD
+```
+
+---
+
+### 4. **Write Back (WB)**
+
+* Writes result back to the register file:
+
+  * If `mem_read` is 1 → write memory data
+  * Otherwise → write ALU result
+* Uses `ex_wb_rd_addr` to choose destination register.
+
+```verilog
+register_file[ex_wb_rd_addr] <= wb_result;
+```
+
+---
+
+##  Memory Components
+
+* **Instruction Memory**: Stores program instructions.
+
+```verilog
+instruction_memory[0] = 32'h00410183; // ADD R3, R2, R1
+```
+
+* **Data Memory**: Stores data accessed by LOAD instructions.
+
+```verilog
+data_memory[0] = 32'h0000000A;
+```
+
+* **Register File**: Stores general-purpose registers R0 to R31.
+
+```verilog
+register_file[rd] <= wb_result;
+```
+
+---
+
+## 🛠 Sample Instructions (in memory)
+
+| Instruction      | Opcode (binary) | Function      |
+| ---------------- | --------------- | ------------- |
+| `ADD R3, R2, R1` | `000001`        | R3 = R2 + R1  |
+| `SUB R4, R5, R2` | `000010`        | R4 = R5 - R2  |
+| `LOAD R6, [R3]`  | `000011`        | R6 = Mem\[R3] |
+
+---
+
+##  How It Works (Step-by-Step Execution)
+
+1. The instruction is fetched and passed to the next stage.
+2. Registers are read and control signals are set.
+3. Arithmetic or memory address is computed.
+4. The result is written back to a register.
+
+This flows in a pipeline where each stage works in parallel on different instructions — like an assembly line.
+
+---
+
+##  Simulation Ideas
+
+To test the processor, create a **testbench** that:
+
+* Initializes register values.
+* Steps through several clock cycles.
+* Monitors values of `pc`, `register_file`, and pipeline registers.
+
+---
+
+##  Performance Analysis
+
+| Metric          | Comment                                     |
+| --------------- | ------------------------------------------- |
+| Pipeline Depth  | 4 stages (IF, ID, EX, WB)                   |
+| Instruction Set | Very limited (ADD, SUB, LOAD)               |
+| Memory Access   | Only LOAD, no STORE instruction implemented |
+| Hazards         | No hazard detection implemented             |
+| Clock Cycles    | Takes 4+ cycles to produce valid output     |
+
+---
+
+##  Extension Ideas
+
+* Add more instructions (STORE, BRANCH).
+* Implement hazard detection (forwarding, stalls).
+* Add data cache or memory controller.
+ 
+##OUTPUT:-- ![Screenshot 2025-05-30 140459](https://github.com/user-attachments/assets/96c22ceb-ea19-482e-b384-16d5050009b4)
+            ![Screenshot 2025-05-30 140527](https://github.com/user-attachments/assets/7cbc0cd3-6848-451b-8b8d-9319106389a1)
+
+
 
