@@ -1,0 +1,146 @@
+// Top-level module for a simple 4-stage pipelined processor
+module pipelined_processor (
+    input clk,    // Clock signal
+    input rst     // Reset signal
+);
+
+// --- Pipeline Registers ---
+// IF/ID
+reg [31:0] if_id_instruction; // Holds fetched instruction
+reg [31:0] if_id_pc_plus_4;   // Holds PC + 4
+
+// ID/EX
+reg [31:0] id_ex_rs_data;     // Rs value from register file
+reg [31:0] id_ex_rt_data;     // Rt value from register file
+reg [4:0]  id_ex_rd_addr;     // Destination register address
+reg [1:0]  id_ex_alu_op;      // ALU operation (00: ADD, 01: SUB, 10: LOAD)
+reg        id_ex_reg_write;   // Enable write to register file
+reg        id_ex_mem_read;    // Enable memory read (for LOAD)
+
+// EX/WB
+reg [31:0] ex_wb_alu_result;  // ALU result or memory address
+reg [4:0]  ex_wb_rd_addr;     // Destination register address
+reg        ex_wb_reg_write;   // Enable write to register file
+reg        ex_wb_mem_read;    // Enable memory read (for LOAD)
+
+// --- Program Counter ---
+reg [31:0] pc; // Program Counter
+
+// --- Instruction Memory (256 words, 32-bit) ---
+reg [31:0] instruction_memory [0:255];
+initial begin
+    // Sample instructions for testing
+    instruction_memory[0] = 32'h00410183; // ADD R3, R2, R1
+    instruction_memory[1] = 32'h00850203; // SUB R4, R5, R2
+    instruction_memory[2] = 32'h00C40603; // LOAD R6, [R3]
+end
+
+// --- Data Memory (256 words, 32-bit) ---
+reg [31:0] data_memory [0:255];
+initial begin
+    data_memory[0] = 32'h0000000A; // Example data at address 0
+end
+
+// --- Register File (32 registers, 32-bit each) ---
+reg [31:0] register_file [0:31];
+
+// --- Write Back Result ---
+wire [31:0] wb_result; // Result to write back (ALU or memory)
+
+// --- Instruction Fetch (IF) Stage ---
+always @(posedge clk or posedge rst) begin
+    if (rst) begin
+        pc <= 32'b0;
+        if_id_instruction <= 32'b0;
+        if_id_pc_plus_4 <= 32'b0;
+    end else begin
+        // Fetch instruction from memory
+        if_id_instruction <= instruction_memory[pc[9:2]]; // Use bits 9:2 for word addressing
+        if_id_pc_plus_4 <= pc + 4; // Increment PC
+        pc <= pc + 4; // Update PC
+    end
+end
+
+// --- Instruction Decode (ID) Stage ---
+wire [5:0] opcode = if_id_instruction[31:26];
+wire [4:0] rs_addr = if_id_instruction[20:16];
+wire [4:0] rt_addr = if_id_instruction[15:11];
+wire [4:0] rd_addr = if_id_instruction[25:21];
+
+always @(posedge clk or posedge rst) begin
+    if (rst) begin
+        id_ex_rs_data <= 32'b0;
+        id_ex_rt_data <= 32'b0;
+        id_ex_rd_addr <= 5'b0;
+        id_ex_alu_op <= 2'b0;
+        id_ex_reg_write <= 1'b0;
+        id_ex_mem_read <= 1'b0;
+    end else begin
+        // Read registers
+        id_ex_rs_data <= (rs_addr == 0) ? 32'b0 : register_file[rs_addr];
+        id_ex_rt_data <= (rt_addr == 0) ? 32'b0 : register_file[rt_addr];
+        id_ex_rd_addr <= rd_addr;
+        // Control signals
+        case (opcode)
+            6'b000001: begin // ADD
+                id_ex_alu_op <= 2'b00;
+                id_ex_reg_write <= 1'b1;
+                id_ex_mem_read <= 1'b0;
+            end
+            6'b000010: begin // SUB
+                id_ex_alu_op <= 2'b01;
+                id_ex_reg_write <= 1'b1;
+                id_ex_mem_read <= 1'b0;
+            end
+            6'b000011: begin // LOAD
+                id_ex_alu_op <= 2'b10;
+                id_ex_reg_write <= 1'b1;
+                id_ex_mem_read <= 1'b1;
+            end
+            default: begin
+                id_ex_alu_op <= 2'b00;
+                id_ex_reg_write <= 1'b0;
+                id_ex_mem_read <= 1'b0;
+            end
+        endcase
+    end
+end
+
+// --- Execute (EX) Stage ---
+reg [31:0] alu_result;
+always @(posedge clk or posedge rst) begin
+    if (rst) begin
+        ex_wb_alu_result <= 32'b0;
+        ex_wb_rd_addr <= 5'b0;
+        ex_wb_reg_write <= 1'b0;
+        ex_wb_mem_read <= 1'b0;
+    end else begin
+        // ALU operation
+        case (id_ex_alu_op)
+            2'b00: alu_result <= id_ex_rs_data + id_ex_rt_data; // ADD
+            2'b01: alu_result <= id_ex_rs_data - id_ex_rt_data; // SUB
+            2'b10: alu_result <= id_ex_rs_data;                 // LOAD (pass Rs as address)
+            default: alu_result <= 32'b0;
+        endcase
+        ex_wb_alu_result <= alu_result;
+        ex_wb_rd_addr <= id_ex_rd_addr;
+        ex_wb_reg_write <= id_ex_reg_write;
+        ex_wb_mem_read <= id_ex_mem_read;
+    end
+end
+
+// --- Write Back (WB) Stage ---
+wire [31:0] mem_data = data_memory[ex_wb_alu_result[9:2]]; // Memory read
+assign wb_result = ex_wb_mem_read ? mem_data : ex_wb_alu_result; // Select ALU or memory data
+
+always @(posedge clk or posedge rst) begin
+    if (rst) begin
+        integer i;
+        for (i = 0; i < 32; i = i + 1)
+            register_file[i] <= 32'b0;
+    end else if (ex_wb_reg_write && ex_wb_rd_addr != 5'b0) begin
+        register_file[ex_wb_rd_addr] <= wb_result; // Write result to register
+    end
+end
+
+endmodule
